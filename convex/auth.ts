@@ -77,16 +77,3 @@ export const sendResetPasswordEmail = action({
     console.log(email, url);
   }
 });
-
-export const getActiveOrganization = query({
-  args: {
-    userId: v.id("users")
-  },
-  handler: async (ctx, { userId }) => {
-    const member = await ctx.db
-      .query("member")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-    return member?.organizationId;
-  }
-});

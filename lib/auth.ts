@@ -6,6 +6,7 @@ import { betterAuthComponent } from "../convex/auth";
 import { nextCookies } from "better-auth/next-js";
 import resend from "./resend";
 import { organization } from "better-auth/plugins";
+import { components } from "../convex/_generated/api";
 
 const siteUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -14,6 +15,27 @@ export const createAuth = (ctx: GenericCtx) =>
     baseURL: siteUrl,
     database: convexAdapter(ctx, betterAuthComponent),
     trustedOrigins: ["http://localhost:3000"],
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session) => {
+            const member = await ctx.runQuery(
+              components.betterAuth.lib.findOne,
+              {
+                model: "member",
+                where: [{ field: "userId", value: session.userId }]
+              }
+            );
+            return {
+              data: {
+                ...session,
+                activeOrganizationId: member?.organizationId
+              }
+            };
+          }
+        }
+      }
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
