@@ -17,6 +17,9 @@ import { Input } from "@/components/ui/input";
 import LogoSelector from "./LogoSelector";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useTransition } from "react";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export default function OrganizationForm({
   step,
@@ -25,6 +28,7 @@ export default function OrganizationForm({
   step: number;
   setStep: (step: number) => void;
 }) {
+  const [isLoading, startTransition] = useTransition();
   const form = useForm<z.infer<typeof SaveOnboardingOrganizationForm>>({
     resolver: zodResolver(SaveOnboardingOrganizationForm),
     defaultValues: {
@@ -36,15 +40,37 @@ export default function OrganizationForm({
 
   // 2. Define a submit handler.
   function onSubmit(values: z.infer<typeof SaveOnboardingOrganizationForm>) {
+    startTransition(async () => {
+      await authClient.organization.create(
+        {
+          name: values.name,
+          slug: values.name.toLowerCase().replace(/ /g, "-"),
+          logo: values.imageUrl
+        },
+        {
+          onError: (ctx) => {
+            if (ctx.error.code === "ORGANIZATION_ALREADY_EXISTS") {
+              form.setError("name", {
+                message: "An organization with this name already exists"
+              });
+              return;
+            }
+            toast.error("Error creating organization");
+          },
+          onSuccess: () => {
+            setStep(step + 1);
+          }
+        }
+      );
+    });
+
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    console.log(values);
-    setStep(step + 1);
   }
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full">
-        <LogoSelector />
+        <LogoSelector disabled={isLoading} />
         <FormField
           control={form.control}
           name="name"
@@ -52,7 +78,12 @@ export default function OrganizationForm({
             <FormItem>
               <FormLabel isRequired>Organization name</FormLabel>
               <FormControl>
-                <Input placeholder="Acme Inc." className="w-full" {...field} />
+                <Input
+                  placeholder="Acme Inc."
+                  className="w-full"
+                  disabled={isLoading}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -71,6 +102,7 @@ export default function OrganizationForm({
               </div>
               <FormControl>
                 <Switch
+                  disabled={isLoading}
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
@@ -79,7 +111,7 @@ export default function OrganizationForm({
           )}
         />
 
-        <Button type="submit" className="w-24 mt-4">
+        <Button type="submit" className="w-24 mt-4" disabled={isLoading}>
           Continue
         </Button>
       </form>

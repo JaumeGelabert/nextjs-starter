@@ -14,11 +14,12 @@ import {
   ImageCropContent
 } from "@/components/ui/kibo-ui/image-crop";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { TrashIcon, UploadIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
-export default function LogoSelector() {
+export default function LogoSelector({ disabled }: { disabled: boolean }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,8 +48,11 @@ export default function LogoSelector() {
     return (
       <div className="flex flex-col items-start gap-4 w-full mt-4 relative">
         <Label>Logo</Label>
-        <label className="cursor-pointer">
+        <label
+          className={cn("cursor-pointer", disabled && "cursor-not-allowed")}
+        >
           <input
+            disabled={disabled}
             type="file"
             accept="image/*"
             onChange={handleFileChange}
@@ -70,7 +74,7 @@ export default function LogoSelector() {
           onClick={handleReset}
           size="icon"
           type="button"
-          variant="outline"
+          disabled={disabled}
         >
           <TrashIcon className="h-4 w-4" />
         </Button>

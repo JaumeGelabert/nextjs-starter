@@ -5,6 +5,7 @@ import { type GenericCtx } from "../convex/_generated/server";
 import { betterAuthComponent } from "../convex/auth";
 import { nextCookies } from "better-auth/next-js";
 import resend from "./resend";
+import { organization } from "better-auth/plugins";
 
 const siteUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -31,5 +32,5 @@ export const createAuth = (ctx: GenericCtx) =>
         });
       }
     },
-    plugins: [nextCookies(), convex()]
+    plugins: [nextCookies(), convex(), organization()]
   });
