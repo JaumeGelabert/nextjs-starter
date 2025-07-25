@@ -7,6 +7,7 @@ import { nextCookies } from "better-auth/next-js";
 import resend from "./resend";
 import { organization } from "better-auth/plugins";
 import { components } from "../convex/_generated/api";
+import { ac, member, admin, owner } from "./permissions";
 
 const siteUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -54,5 +55,16 @@ export const createAuth = (ctx: GenericCtx) =>
         });
       }
     },
-    plugins: [nextCookies(), convex(), organization()]
+    plugins: [
+      nextCookies(),
+      convex(),
+      organization({
+        ac,
+        roles: {
+          owner,
+          admin,
+          member
+        }
+      })
+    ]
   });

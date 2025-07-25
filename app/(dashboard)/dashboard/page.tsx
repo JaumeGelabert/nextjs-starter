@@ -39,6 +39,14 @@ export default function DashboardPage() {
 
       <p>ACTIVE ORGANIZATION: {activeOrganization?.name}</p>
       <Button onClick={handleLogout}>Log out</Button>
+      <div className="mt-10">
+        {activeOrganization?.members.map((member) => (
+          <div key={member.id}>
+            {member.user.email} - {member.role}
+            <Button className="ml-10">Remove</Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
