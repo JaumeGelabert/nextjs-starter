@@ -8,6 +8,7 @@ import resend from "./resend";
 import { organization } from "better-auth/plugins";
 import { components } from "../convex/_generated/api";
 import { ac, member, admin, owner } from "./permissions";
+import { passkey } from "better-auth/plugins/passkey";
 
 const siteUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -64,7 +65,25 @@ export const createAuth = (ctx: GenericCtx) =>
           owner,
           admin,
           member
+        },
+        teams: {
+          enabled: true,
+          maximumTeams: 10, // Optional: limit teams per organization
+          allowRemovingAllTeams: false // Optional: prevent removing the last team
+        },
+        async sendInvitationEmail(data) {
+          const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL}/accept-invitation?token=${data.id}`;
+          await resend.emails.send({
+            from: "Uprio <uprio@auth.tryuprio.com>",
+            to: [data.email],
+            subject: "You've been invited to join a team",
+            html: `
+              <h3>You've been invited to join ${data.organization.name} team by ${data.inviter.user.name}</h3>
+              <p>Click <a href="${inviteLink}">here</a> to accept the invitation.</p>
+            `
+          });
         }
-      })
+      }),
+      passkey()
     ]
   });

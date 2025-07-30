@@ -1,8 +1,11 @@
+import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
 import { ThemeProvider } from "@/components/providers/NextThemeProvider";
 import { PostHogProvider } from "@/components/providers/PosthogProvider";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,7 +35,15 @@ export default function RootLayout({
       >
         <PostHogProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
+            <ConvexClientProvider>
+              <NuqsAdapter>
+                <SidebarProvider>
+                  <div className="flex flex-col items-center justify-center w-full">
+                    {children}
+                  </div>
+                </SidebarProvider>
+              </NuqsAdapter>
+            </ConvexClientProvider>
           </ThemeProvider>
         </PostHogProvider>
         <Toaster />

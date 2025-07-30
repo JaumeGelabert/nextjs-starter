@@ -15,14 +15,29 @@ import {
 } from "@/components/ui/kibo-ui/image-crop";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Id } from "@/convex/_generated/dataModel";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { TrashIcon, UploadIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
-export default function LogoSelector({ disabled }: { disabled: boolean }) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+export default function LogoSelector({
+  selectedFile,
+  setSelectedFile,
+  currentImageUrl,
+  fileId,
+  disabled
+}: {
+  selectedFile: File | null;
+  setSelectedFile: (file: File | null) => void;
+  currentImageUrl: string | null | undefined;
+  fileId: Id<"files"> | null | undefined;
+  disabled: boolean;
+}) {
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const deleteImageMutation = useMutation(api.files.image.deleteById);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,9 +48,14 @@ export default function LogoSelector({ disabled }: { disabled: boolean }) {
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setSelectedFile(null);
     setCroppedImage(null);
+    if (fileId) {
+      await deleteImageMutation({
+        fileId
+      });
+    }
     setIsModalOpen(false);
   };
 
@@ -44,62 +64,60 @@ export default function LogoSelector({ disabled }: { disabled: boolean }) {
     setIsModalOpen(false);
   };
 
-  if (croppedImage) {
-    return (
-      <div className="flex flex-col items-start gap-4 w-full mt-4 relative">
-        <Label>Logo</Label>
-        <label
-          className={cn("cursor-pointer", disabled && "cursor-not-allowed")}
-        >
-          <input
-            disabled={disabled}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <div className="w-20 h-20 rounded-lg border border-dashed border-muted-foreground/50 flex items-center justify-center overflow-hidden hover:border-primary hover:bg-muted transition-colors shadow-xs">
-            <Image
-              alt="Profile picture"
-              height={96}
-              src={croppedImage}
-              unoptimized
-              width={96}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </label>
-        <Button
-          className="absolute top-22 left-16 rounded-full"
-          onClick={handleReset}
-          size="icon"
-          type="button"
-          disabled={disabled}
-        >
-          <TrashIcon className="h-4 w-4" />
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <>
-      <div className="flex flex-col items-start gap-4 w-full mt-4">
-        <Label>Logo</Label>
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <div className="w-20 h-20 rounded-lg border border-dashed border-muted-foreground/50 flex items-center justify-center overflow-hidden hover:border-primary hover:bg-muted transition-colors shadow-xs">
-            <div className="bg-muted w-30 h-30 flex flex-col items-center justify-center rounded-full hover:text-primary">
-              <UploadIcon className="h-4 w-4 text-muted-foreground" />
+      {croppedImage || currentImageUrl ? (
+        <div className="flex flex-col items-start gap-4 w-full mt-4 relative">
+          <Label>Logo</Label>
+          <label
+            className={cn("cursor-pointer", disabled && "cursor-not-allowed")}
+          >
+            <input
+              disabled={disabled}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="w-20 h-20 rounded-lg border border-dashed border-muted-foreground/50 flex items-center justify-center overflow-hidden hover:border-primary hover:bg-muted transition-colors shadow-xs">
+              <Image
+                alt="Profile picture"
+                height={96}
+                src={croppedImage || currentImageUrl || ""}
+                unoptimized
+                width={96}
+                className="w-full h-full object-cover"
+              />
             </div>
-          </div>
-        </label>
-      </div>
+          </label>
+          <Button
+            className="absolute top-22 left-16 rounded-full"
+            onClick={handleReset}
+            size="icon"
+            type="button"
+            disabled={disabled}
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-4 w-full mt-4">
+          <Label>Logo</Label>
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="w-20 h-20 rounded-lg border border-dashed border-muted-foreground/50 flex items-center justify-center overflow-hidden hover:border-primary hover:bg-muted transition-colors shadow-xs">
+              <div className="bg-muted w-30 h-30 flex flex-col items-center justify-center rounded-full hover:text-primary">
+                <UploadIcon className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+          </label>
+        </div>
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl">

@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import LoginForm from "./forms/LoginForm";
 import SignupForm from "./forms/SignupForm";
+import { useQueryState } from "nuqs";
 
 interface AuthCardProps {
   action: "login" | "signup";
@@ -26,6 +27,8 @@ export default function AuthCard({
   microsoft = false
 }: AuthCardProps) {
   const isLogin = action === "login";
+  const [token] = useQueryState("token");
+
   return (
     <>
       <div className="flex items-center gap-2">
@@ -71,7 +74,15 @@ export default function AuthCard({
         </CardContent>
         <CardFooter className="flex-col justify-start gap-2 flex items-center">
           <Link
-            href={isLogin ? "/signup" : "/login"}
+            href={
+              isLogin
+                ? token
+                  ? `/signup?token=${token}`
+                  : "/signup"
+                : token
+                  ? `/login?token=${token}`
+                  : "/login"
+            }
             className="text-sm text-muted-foreground group transition-all"
           >
             {isLogin ? "Don't have an account? " : "Already have an account? "}

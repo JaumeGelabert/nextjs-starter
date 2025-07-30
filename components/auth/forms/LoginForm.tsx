@@ -20,10 +20,13 @@ import z from "zod";
 import posthog from "posthog-js";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useQueryState } from "nuqs";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, startTransition] = useTransition();
+  const [redirect] = useQueryState("redirect");
+  const [token] = useQueryState("token");
 
   const form = useForm<z.infer<typeof LoginFormSchema>>({
     resolver: zodResolver(LoginFormSchema),
@@ -34,11 +37,13 @@ export default function LoginForm() {
   });
   function onSubmit(values: z.infer<typeof LoginFormSchema>) {
     startTransition(async () => {
+      console.log("REDIRECT", redirect);
+      console.log("TOKEN", token);
       await authClient.signIn.email(
         {
           email: values.email,
           password: values.password,
-          callbackURL: "/onboarding"
+          callbackURL: redirect ? `/${redirect}?token=${token}` : "/onboarding"
         },
         {
           onError: (ctx) => {

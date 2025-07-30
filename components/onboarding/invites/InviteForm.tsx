@@ -16,13 +16,18 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { authClient } from "@/lib/auth-client";
 import { InviteUsersOnboardingForm } from "@/schemas/InviteUsersOnboardingForm";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
 export default function InviteForm() {
+  const [isLoading, startTransition] = useTransition();
+  const router = useRouter();
   const form = useForm<z.infer<typeof InviteUsersOnboardingForm>>({
     resolver: zodResolver(InviteUsersOnboardingForm),
     defaultValues: {
@@ -40,17 +45,32 @@ export default function InviteForm() {
   });
 
   function onSubmit(values: z.infer<typeof InviteUsersOnboardingForm>) {
-    // Filter out users with empty emails
-    const usersWithEmails = values.users.filter(
-      (user) => user.email && user.email.trim() !== ""
-    );
+    startTransition(async () => {
+      // Filter out users with empty emails
+      const usersWithEmails = values.users.filter(
+        (user) => user?.email && user.email.trim() !== ""
+      );
 
-    const finalData = {
-      ...values,
-      users: usersWithEmails
-    };
+      const finalData = {
+        ...values,
+        users: usersWithEmails
+      };
 
-    console.log("Users to invite:", finalData);
+      for (const user of finalData.users) {
+        if (!user?.email) continue;
+        const { data, error } = await authClient.organization.inviteMember({
+          email: user.email,
+          role: user.role,
+          resend: true
+        });
+        console.log("Invitation sent:", data);
+        if (error) {
+          console.error("Error sending invitation:", error);
+        }
+      }
+
+      router.push("/dashboard");
+    });
   }
 
   const MAX_INVITATIONS = 5;
@@ -87,6 +107,7 @@ export default function InviteForm() {
                       variant="ghost"
                       size="sm"
                       onClick={addInvitation}
+                      disabled={isLoading}
                     >
                       <PlusIcon className="h-4 w-4 mr-1" />
                       Add invitation
@@ -113,6 +134,7 @@ export default function InviteForm() {
                             type="email"
                             {...field}
                             value={field.value || ""}
+                            disabled={isLoading}
                           />
                         </FormControl>
                         {field.value && field.value.trim() !== "" && (
@@ -132,6 +154,7 @@ export default function InviteForm() {
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
+                          disabled={isLoading}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue placeholder="Member" />
@@ -151,7 +174,7 @@ export default function InviteForm() {
           </div>
 
           <div className="flex justify-start pt-4">
-            <Button type="submit" className="px-8">
+            <Button type="submit" className="px-8" disabled={isLoading}>
               Finish
             </Button>
           </div>

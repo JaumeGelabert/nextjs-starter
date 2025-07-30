@@ -10,87 +10,60 @@ import {
   FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { api } from "@/convex/_generated/api";
-import { OnboardingProfileFormSchema } from "@/schemas/SaveOnboardingProfileForm";
+import { personalDetailsSchema } from "@/schemas/settings/personalDetailsSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "convex/react";
-import React, { useTransition, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import z from "zod";
-import ImageSelector from "./ImageSelector";
+import { z } from "zod";
+import ImageSelector from "../onboarding/profile/ImageSelector";
+import { useEffect, useState, useTransition } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 
-// Type for user data returned from getCurrentUser query
-type User = {
-  _id: string;
-  name?: string;
+interface PersonalDetailsFormProps {
+  name: string;
   email: string;
-  image?: string;
-  // Add other user properties as needed
-} | null;
+  imageUrl: string;
+  isPending: boolean;
+}
 
-export default function ProfileForm({
-  step,
-  setStep
-}: {
-  step: number;
-  setStep: (step: number) => void;
-}) {
-  const [isLoading, startTransition] = useTransition();
+export default function PersonalDetailsForm({
+  name,
+  email,
+  imageUrl,
+  isPending
+}: PersonalDetailsFormProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const user: User = useQuery(api.auth.getCurrentUser);
+  const [isLoading, startTransition] = useTransition();
+  const getUserLogoQuery = useQuery(
+    api.files.image.getUserLogo,
+    email ? {} : "skip"
+  );
   const updateUser = useMutation(api.user.updateUserOnboarding);
-
   const generateUploadUrlMutation = useMutation(
     api.files.image.generateUploadUrl
   );
   const sendImageMutation = useMutation(api.files.image.sendImage);
-  const getUserLogoQuery = useQuery(
-    api.files.image.getUserLogo,
-    user ? {} : "skip"
-  );
   const deleteImageMutation = useMutation(api.files.image.deleteById);
 
-  const form = useForm<z.infer<typeof OnboardingProfileFormSchema>>({
-    resolver: zodResolver(OnboardingProfileFormSchema),
+  const form = useForm<z.infer<typeof personalDetailsSchema>>({
+    resolver: zodResolver(personalDetailsSchema),
     defaultValues: {
-      name: user?.name || "",
-      email: user?.email || "",
-      phone: "",
-      imageUrl: user?.image || ""
+      name: name ?? "",
+      email: email ?? "",
+      imageUrl: imageUrl ?? ""
     }
   });
 
-  // Reset form when user data loads
-  useEffect(() => {
-    if (user) {
-      form.reset({
-        name: user.name || "",
-        email: user.email || "",
-        phone: "",
-        imageUrl: user.image || ""
-      });
-    }
-  }, [user, form]);
-
-  // Log getUserLogoQuery as soon as it's available
-  useEffect(() => {
-    if (getUserLogoQuery) {
-      console.log("getUserLogoQuery:", getUserLogoQuery);
-    }
-  }, [getUserLogoQuery]);
-
-  // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof OnboardingProfileFormSchema>) {
+  const onSubmit = (values: z.infer<typeof personalDetailsSchema>) => {
     startTransition(async () => {
-      if (!user) {
+      if (!email) {
         toast.error("User not found");
         return;
       }
       try {
         await updateUser({
           name: values.name,
-          phone: values.phone,
           imageUrl: values.imageUrl
         });
         if (selectedFile) {
@@ -111,14 +84,19 @@ export default function ProfileForm({
             storageId,
             type: "profile"
           });
-          console.log("userLogo", getUserLogoQuery);
+          toast.success("User updated successfully");
         }
-        setStep(step + 1);
       } catch (error) {
         console.error("Error updating user:", error);
       }
     });
-  }
+  };
+
+  useEffect(() => {
+    form.setValue("name", name);
+    form.setValue("email", email);
+    form.setValue("imageUrl", imageUrl);
+  }, [name, email, imageUrl]);
 
   return (
     <Form {...form}>
@@ -137,27 +115,8 @@ export default function ProfileForm({
               <FormLabel isRequired>Name</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="John Doe"
-                  className="w-full"
-                  disabled={isLoading}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder=""
-                  className="w-full"
-                  disabled={isLoading}
+                  placeholder={isPending ? "Loading..." : "John Doe"}
+                  disabled={isPending}
                   {...field}
                 />
               </FormControl>
@@ -172,15 +131,17 @@ export default function ProfileForm({
             <FormItem>
               <FormLabel isRequired>Email</FormLabel>
               <FormControl>
-                {/* TODO: This email cant be modified since is the one that the user logged in with */}
-                <Input placeholder="" disabled className="w-full" {...field} />
+                <Input
+                  value={field.value || "gelabertgalmes98@gmail.com"}
+                  disabled
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-24 mt-4" disabled={isLoading}>
-          Continue
+        <Button type="submit" disabled={isLoading}>
+          Save
         </Button>
       </form>
     </Form>

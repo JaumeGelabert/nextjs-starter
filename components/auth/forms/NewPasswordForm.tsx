@@ -10,6 +10,7 @@ import {
   FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { authClient } from "@/lib/auth-client";
 import { NewPasswordSchema } from "@/schemas/auth/NewPasswordSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -19,12 +20,12 @@ import {
   EyeOffIcon,
   LockIcon
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useQueryState } from "nuqs";
 import { useEffect, useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
-import z from "zod";
-import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+import z from "zod";
 
 export default function NewPasswordForm() {
   const router = useRouter();
@@ -34,9 +35,7 @@ export default function NewPasswordForm() {
   const [hasCapital, setHasCapital] = useState(false);
   const [hasLowercase, setHasLowercase] = useState(false);
   const [hasLength, setHasLength] = useState(false);
-
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token") as string;
+  const [token] = useQueryState("token");
 
   const form = useForm<z.infer<typeof NewPasswordSchema>>({
     resolver: zodResolver(NewPasswordSchema),
@@ -50,7 +49,7 @@ export default function NewPasswordForm() {
       const { error } = await authClient.resetPassword(
         {
           newPassword: values.password,
-          token
+          token: token!
         },
         {
           onError: (ctx) => {

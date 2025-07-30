@@ -20,15 +20,19 @@ import {
   MailIcon,
   UserIcon
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useQueryState } from "nuqs";
+import posthog from "posthog-js";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import z from "zod";
-import posthog from "posthog-js";
 import { toast } from "sonner";
+import z from "zod";
 
 export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, startTransition] = useTransition();
+  const [token] = useQueryState("token");
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof SignupFormSchema>>({
     resolver: zodResolver(SignupFormSchema),
@@ -38,6 +42,7 @@ export default function SignupForm() {
       password: ""
     }
   });
+
   function onSubmit(values: z.infer<typeof SignupFormSchema>) {
     startTransition(async () => {
       await authClient.signUp.email(
@@ -54,6 +59,14 @@ export default function SignupForm() {
               email: values.email,
               custom_message: "Error signing up"
             });
+          },
+          onSuccess: () => {
+            console.log("REDIRECTING WITH TOKEN", token);
+            if (token) {
+              router.push(`/accept-invitation?token=${token}`);
+            } else {
+              router.push("/onboarding");
+            }
           }
         }
       );
