@@ -60,8 +60,7 @@ export default function InviteForm() {
         if (!user?.email) continue;
         const { data, error } = await authClient.organization.inviteMember({
           email: user.email,
-          role: user.role,
-          resend: true
+          role: user.role
         });
         console.log("Invitation sent:", data);
         if (error) {
