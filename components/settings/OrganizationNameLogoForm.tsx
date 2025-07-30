@@ -15,6 +15,7 @@ import { authClient } from "@/lib/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 interface OrganizationNameLogoFormProps {
@@ -56,6 +57,7 @@ export default function OrganizationNameLogoForm({
         },
         {
           onSuccess: () => {
+            toast.success("Organization name updated");
             onSuccess?.();
           }
         }

@@ -47,7 +47,7 @@ export default function OrganizationPage() {
         />
       </div>
       <Separator />
-      <div className="flex flex-col justify-start items-start gap-4 w-full">
+      <div className="flex flex-col justify-start items-start gap-4 w-full mb-10">
         <div className="flex flex-col justify-start items-start w-full">
           <p className="font-medium">Social media</p>
           <p className="text-sm text-muted-foreground">
