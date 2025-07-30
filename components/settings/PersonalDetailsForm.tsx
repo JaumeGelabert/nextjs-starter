@@ -131,10 +131,7 @@ export default function PersonalDetailsForm({
             <FormItem>
               <FormLabel isRequired>Email</FormLabel>
               <FormControl>
-                <Input
-                  value={field.value || "gelabertgalmes98@gmail.com"}
-                  disabled
-                />
+                <Input value={field.value} disabled />
               </FormControl>
               <FormMessage />
             </FormItem>

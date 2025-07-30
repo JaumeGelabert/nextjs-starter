@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState } from "react";
 import { useTheme } from "next-themes";
 
 export default function SelectTheme({
@@ -13,15 +12,13 @@ export default function SelectTheme({
   step: number;
   setStep: (step: number) => void;
 }) {
-  const [selectedTheme, setSelectedTheme] = useState<string>("system");
-  const { setTheme } = useTheme();
+  const { setTheme, theme } = useTheme();
 
   const handleNext = () => {
     setStep(step + 1);
   };
 
   const handleThemeChange = (theme: string) => {
-    setSelectedTheme(theme);
     setTheme(theme);
   };
 
@@ -29,7 +26,7 @@ export default function SelectTheme({
     <div className="space-y-6 w-full max-w-sm">
       <RadioGroup
         className="grid-cols-3"
-        defaultValue="light"
+        defaultValue={theme}
         onValueChange={handleThemeChange}
       >
         <div className="border-input has-data-[state=checked]:border-primary/50 relative flex flex-col gap-4 rounded-md border shadow-xs outline-none bg-zinc-100 h-16 overflow-hidden">

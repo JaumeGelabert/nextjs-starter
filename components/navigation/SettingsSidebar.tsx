@@ -14,7 +14,6 @@ import {
   ArrowLeftIcon,
   BuildingIcon,
   CreditCardIcon,
-  Settings2Icon,
   UserIcon,
   UsersIcon
 } from "lucide-react";
@@ -40,12 +39,6 @@ export function SettingsSidebar() {
               <Link href="/settings/profile">
                 <UserIcon className="text-muted-foreground group-hover/profile:text-foreground transition-colors" />
                 Profile
-              </Link>
-            </SidebarMenuButton>
-            <SidebarMenuButton className="group/settings" asChild>
-              <Link href="/settings/preferences">
-                <Settings2Icon className="text-muted-foreground group-hover/settings:text-foreground transition-colors" />
-                Preferences
               </Link>
             </SidebarMenuButton>
           </SidebarMenu>
