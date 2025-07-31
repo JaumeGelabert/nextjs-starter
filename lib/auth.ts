@@ -68,8 +68,8 @@ export const createAuth = (ctx: GenericCtx) =>
         },
         teams: {
           enabled: true,
-          maximumTeams: 10, // Optional: limit teams per organization
-          allowRemovingAllTeams: false // Optional: prevent removing the last team
+          maximumTeams: 10,
+          allowRemovingAllTeams: false
         },
         async sendInvitationEmail(data) {
           const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL}/accept-invitation?token=${data.id}`;

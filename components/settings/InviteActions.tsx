@@ -34,7 +34,7 @@ export default function InviteActions({
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleResend}>Resend</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleResend} disabled>Resend</DropdownMenuItem>
         <DropdownMenuItem className="text-destructive" onClick={handleRevoke}>
           Revoke
         </DropdownMenuItem>

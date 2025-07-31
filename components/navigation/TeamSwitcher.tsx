@@ -4,6 +4,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -18,6 +19,8 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
+import CreateTeamModal from "../team/CreateTeamModal";
+import { useEffect, useState, useTransition } from "react";
 
 export function TeamSwitcher({
   orgName,
@@ -28,12 +31,33 @@ export function TeamSwitcher({
   isPending: boolean;
   email: string;
 }) {
+  const [fetchingTeams, startTransition] = useTransition();
+  const [orgTeams, setOrgTeams] = useState([]);
   const router = useRouter();
   const { data: activeOrganization } = authClient.useActiveOrganization();
   const getOrganizationLogoQuery = useQuery(
     api.files.image.getOrganizationLogo,
     activeOrganization?.name ? {} : "skip"
   );
+
+  const getTeams = () => {
+    startTransition(async () => {
+      const { data, error } = await authClient.organization.listTeams(
+        {},
+        {
+          onSuccess: ({ data }) => {
+            console.log("data", data);
+            setOrgTeams(data);
+          }
+        }
+      );
+    });
+  };
+
+  useEffect(() => {
+    getTeams();
+  }, []);
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -46,6 +70,7 @@ export function TeamSwitcher({
                     {getOrganizationLogoQuery?.url && (
                       <img
                         src={getOrganizationLogoQuery.url}
+                        alt="Organization logo"
                         className="size-8"
                       />
                     )}
@@ -77,10 +102,27 @@ export function TeamSwitcher({
           >
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push("/settings/members")}>
               Manage members
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Teams</DropdownMenuLabel>
+            {orgTeams.length ? (
+              orgTeams.map((team: { id: string; name: string }) => (
+                <DropdownMenuItem key={team.id} onClick={handleTeamClick}>
+                  {team.name}
+                </DropdownMenuItem>
+              ))
+            ) : (
+              <div className="p-2 bg-zinc-50 rounded text-xs text-pretty text-muted-foreground">
+                {orgName} has no teams yet.
+              </div>
+            )}
+            <CreateTeamModal>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Add team
+              </DropdownMenuItem>
+            </CreateTeamModal>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

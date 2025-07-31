@@ -11,32 +11,29 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
-import { OnboardingProfileFormSchema } from "@/schemas/SaveOnboardingProfileForm";
+import { CreateTeamSchema } from "@/schemas/CreateTeamSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
 export default function CreateTeamForm({
-  step,
-  setStep
+  onSuccess
 }: {
-  step: number;
-  setStep: (step: number) => void;
+  onSuccess?: () => void;
 }) {
   const [isLoading, startTransition] = useTransition();
   const organization = authClient.useActiveOrganization();
 
-  const form = useForm<z.infer<typeof OnboardingProfileFormSchema>>({
-    resolver: zodResolver(OnboardingProfileFormSchema),
+  const form = useForm<z.infer<typeof CreateTeamSchema>>({
+    resolver: zodResolver(CreateTeamSchema),
     defaultValues: {
-      name: "",
-      imageUrl: ""
+      name: ""
     }
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof OnboardingProfileFormSchema>) {
+  function onSubmit(values: z.infer<typeof CreateTeamSchema>) {
     startTransition(async () => {
       try {
         const { data, error } = await authClient.organization.createTeam({
@@ -45,7 +42,11 @@ export default function CreateTeamForm({
         });
         console.log("data", data);
         console.log("error", error);
-        setStep(step + 1);
+
+        if (data && !error) {
+          form.reset();
+          onSuccess?.();
+        }
       } catch (error) {
         console.error("Error updating user:", error);
       }

@@ -58,12 +58,12 @@ export function SettingsSidebar() {
                 Members
               </Link>
             </SidebarMenuButton>
-            <SidebarMenuButton className="group/billing" asChild>
+            {/* <SidebarMenuButton className="group/billing" asChild disabled>
               <Link href="/settings/billing">
                 <CreditCardIcon className="text-muted-foreground group-hover/billing:text-foreground transition-colors" />
                 Billing
               </Link>
-            </SidebarMenuButton>
+            </SidebarMenuButton> */}
           </SidebarMenu>
         </SidebarGroup>
         <SidebarGroup />
