@@ -63,6 +63,28 @@ export const getUserLogo = query({
   }
 });
 
+export const getUserLogoById = query({
+  args: {
+    userId: v.string()
+  },
+  handler: async (ctx, args) => {
+    const { userId } = args;
+
+    const userLogo = await ctx.db
+      .query("files")
+      .filter((q) => q.eq(q.field("type"), "profile"))
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .first();
+
+    if (userLogo?.format === "image") {
+      const url = await ctx.storage.getUrl(userLogo.body);
+      return { url, storageId: userLogo._id };
+    }
+
+    return null;
+  }
+});
+
 export const getOrganizationLogo = query({
   args: {},
   handler: async (ctx) => {

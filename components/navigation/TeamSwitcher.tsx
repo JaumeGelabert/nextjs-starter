@@ -199,13 +199,13 @@ export function TeamSwitcher({
                       </AvatarFallback>
                     </Avatar>
                     <span>{team.name}</span>
-                    <div className="flex items-center justify-end">
-                      {activeTeamId === team.id && (
+                    {activeTeamId === team.id && (
+                      <div className="flex items-center justify-end ml-auto">
                         <span className="text-xs text-muted-foreground">
                           Active
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </DropdownMenuItem>
               ))

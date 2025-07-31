@@ -1,7 +1,7 @@
 "use client";
 
 import { columns } from "@/components/settings/teams/columns";
-import { DataTable } from "@/components/settings/teams/DataTable";
+import { DataTable } from "@/components/DataTable";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
@@ -33,7 +33,7 @@ export default function TeamsPage() {
     <div className="flex flex-col justify-start items-start gap-8">
       <p className="font-semibold text-xl">Teams</p>
       <div className="flex flex-col justify-start items-start gap-2 w-full">
-        <DataTable columns={columns} data={teamsWithMembers} />
+        <DataTable columns={columns} data={teamsWithMembers} redirectTeam />
       </div>
     </div>
   );
