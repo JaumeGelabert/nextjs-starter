@@ -1,5 +1,7 @@
 "use client";
 
+import { columns } from "@/components/settings/teams/columns";
+import { DataTable } from "@/components/settings/teams/DataTable";
 import { authClient } from "@/lib/auth-client";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
@@ -35,9 +37,10 @@ export default function TeamsPage() {
     <div className="flex flex-col justify-start items-start gap-8">
       <p className="font-semibold text-xl">Teams</p>
       <div className="flex flex-col justify-start items-start gap-2 w-full">
-        {orgTeams.map((team: { id: string; name: string }) => (
+        <DataTable columns={columns} data={orgTeams} />
+        {/* {orgTeams.map((team: { id: string; name: string }) => (
           <div key={team.id}>{team.name}</div>
-        ))}
+        ))} */}
       </div>
     </div>
   );
