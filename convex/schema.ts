@@ -35,5 +35,19 @@ export default defineSchema({
     userId: v.string(),
     format: v.string(),
     type: v.union(v.literal("profile"), v.literal("organization"))
+  }),
+
+  // Team membership junction table for many-to-many relationship
+  teamMembers: defineTable({
+    userId: v.string(), // The user ID from Better Auth
+    teamId: v.string(), // The team ID from Better Auth
+    organizationId: v.string(), // The organization ID for validation
+    role: v.optional(v.string()), // Optional role within the team
+    createdAt: v.number(), // When the membership was created
+    createdBy: v.string() // Who added them to the team
   })
+    .index("byUserId", ["userId"])
+    .index("byTeamId", ["teamId"])
+    .index("byUserAndTeam", ["userId", "teamId"])
+    .index("byOrganization", ["organizationId"])
 });

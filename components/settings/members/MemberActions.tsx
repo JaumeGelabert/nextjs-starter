@@ -27,7 +27,12 @@ export default function MemberActions({
   memberName
 }: MemberActionsProps) {
   const teams = useQuery(api.auth.getTeamsWithMembers, {});
+  const memberTeams = useQuery(
+    api.auth.getMemberTeams,
+    memberId ? { memberId } : "skip"
+  );
   const addMemberToTeam = useMutation(api.auth.addMemberToTeam);
+  const removeMemberFromTeam = useMutation(api.auth.removeMemberFromTeam);
 
   const handleTeamSelect = async (teamId: string, teamName: string) => {
     if (!memberId) {
@@ -51,7 +56,35 @@ export default function MemberActions({
     }
   };
 
+  const handleRemoveFromTeam = async (teamId: string, teamName: string) => {
+    if (!memberId) {
+      toast.error("No member selected");
+      return;
+    }
+
+    try {
+      await removeMemberFromTeam({
+        memberId: memberId,
+        teamId: teamId
+      });
+
+      toast.success(
+        `Successfully removed ${memberName || "member"} from ${teamName}`
+      );
+    } catch (error) {
+      toast.error(
+        `Failed to remove ${memberName || "member"} from ${teamName}`
+      );
+      console.error("Error removing team member:", error);
+    }
+  };
+
+  const isInTeam = (teamId: string) => {
+    return memberTeams?.some((memberTeam) => memberTeam.id === teamId);
+  };
+
   console.log("TEAMS", teams);
+  console.log("MEMBER TEAMS", memberTeams);
 
   return (
     <DropdownMenu>
@@ -68,24 +101,45 @@ export default function MemberActions({
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <UsersIcon className="w-4 h-4 mr-2" />
-            Add to Team
+            Manage Teams
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
             {teams && teams.length > 0 ? (
-              teams.map((team) => (
-                <DropdownMenuItem
-                  key={team.id}
-                  onClick={() => handleTeamSelect(team.id, team.name)}
-                  className="cursor-pointer"
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span>{team.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {team.members} members
-                    </span>
-                  </div>
-                </DropdownMenuItem>
-              ))
+              teams.map((team) => {
+                const isMember = isInTeam(team.id);
+                return (
+                  <DropdownMenuItem
+                    key={team.id}
+                    onClick={() =>
+                      isMember
+                        ? handleRemoveFromTeam(team.id, team.name)
+                        : handleTeamSelect(team.id, team.name)
+                    }
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <span className={isMember ? "text-green-600" : ""}>
+                          {team.name}
+                        </span>
+                        {isMember && (
+                          <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
+                            Member
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {team.members} members
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {isMember ? "Remove" : "Add"}
+                        </span>
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })
             ) : (
               <DropdownMenuItem disabled>
                 <span className="text-muted-foreground">

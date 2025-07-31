@@ -295,21 +295,13 @@ export const getTeamsWithMembers = query({
                 name: team.name
               });
 
-              const membersResult = await ctx.runQuery(
-                components.betterAuth.lib.findMany,
-                {
-                  model: "member",
-                  where: [{ field: "teamId", value: team._id }],
-                  paginationOpts: {
-                    cursor: null,
-                    numItems: 1000 // Large number to get all members effectively
-                  }
-                }
-              );
+              // Count members using our teamMembers table
+              const teamMembers = await ctx.db
+                .query("teamMembers")
+                .withIndex("byTeamId", (q) => q.eq("teamId", team._id))
+                .collect();
 
-              // Extract members from the paginated result
-              const members = membersResult?.page || [];
-              const memberCount = Array.isArray(members) ? members.length : 0;
+              const memberCount = teamMembers.length;
 
               // Ensure all fields are properly typed and not undefined
               const teamWithMembers = {
@@ -392,7 +384,7 @@ export const getTeamsSimple = query({
   }
 });
 
-// Mutation to add a member to a team
+// Mutation to add a member to a team (supports multiple teams via teamMembers table)
 export const addMemberToTeam = mutation({
   args: {
     memberId: v.string(),
@@ -459,16 +451,37 @@ export const addMemberToTeam = mutation({
         throw new Error("Member and team must belong to the same organization");
       }
 
-      // Update the member to add them to the team
-      console.log("Updating member to add to team...");
-      await ctx.runMutation(components.betterAuth.lib.updateOne, {
-        input: {
-          model: "member",
-          where: [{ field: "id", value: memberId }],
-          update: {
-            teamId: teamId
-          }
-        }
+      // Check if this member is already in this team using our teamMembers table
+      console.log("Checking for existing team membership...");
+      const existingTeamMember = await ctx.db
+        .query("teamMembers")
+        .withIndex("byUserAndTeam", (q) =>
+          q.eq("userId", member.userId).eq("teamId", teamId)
+        )
+        .first();
+
+      if (existingTeamMember) {
+        console.log("Member is already in this team");
+        return {
+          success: true,
+          memberId,
+          teamId,
+          message: "Member already in team"
+        };
+      }
+
+      // Get current user for createdBy field
+      const currentUser = await betterAuthComponent.getAuthUser(ctx);
+
+      // Create a new team membership record
+      console.log("Creating new team membership...");
+      await ctx.db.insert("teamMembers", {
+        userId: member.userId,
+        teamId: teamId,
+        organizationId: member.organizationId,
+        role: member.role, // Use the same role as the existing member
+        createdAt: Date.now(),
+        createdBy: currentUser?.userId || "system"
       });
 
       console.log("Successfully added member to team!");
@@ -476,6 +489,116 @@ export const addMemberToTeam = mutation({
     } catch (error) {
       console.error("Error adding member to team:", error);
       throw error;
+    }
+  }
+});
+
+// Mutation to remove a member from a team
+export const removeMemberFromTeam = mutation({
+  args: {
+    memberId: v.string(),
+    teamId: v.string()
+  },
+  handler: async (ctx, { memberId, teamId }) => {
+    try {
+      console.log("=== REMOVE MEMBER FROM TEAM DEBUG ===");
+      console.log("Input params:", { memberId, teamId });
+
+      const session = await ctx.runQuery(
+        components.betterAuth.lib.getCurrentSession
+      );
+
+      if (!session || !session.token) {
+        throw new Error("Not authenticated");
+      }
+
+      // Get the member to find their userId
+      const member = await ctx.runQuery(components.betterAuth.lib.findOne, {
+        model: "member",
+        where: [{ field: "id", value: memberId }]
+      });
+
+      if (!member) {
+        throw new Error("Member not found");
+      }
+
+      // Find the specific team membership record in our teamMembers table
+      const teamMember = await ctx.db
+        .query("teamMembers")
+        .withIndex("byUserAndTeam", (q) =>
+          q.eq("userId", member.userId).eq("teamId", teamId)
+        )
+        .first();
+
+      if (!teamMember) {
+        console.log("Member is not in this team");
+        return {
+          success: true,
+          memberId,
+          teamId,
+          message: "Member not in team"
+        };
+      }
+
+      // Remove the team membership
+      await ctx.db.delete(teamMember._id);
+
+      console.log("Successfully removed member from team!");
+      return { success: true, memberId, teamId };
+    } catch (error) {
+      console.error("Error removing member from team:", error);
+      throw error;
+    }
+  }
+});
+
+// Query to get all teams that a member belongs to
+export const getMemberTeams = query({
+  args: {
+    memberId: v.string()
+  },
+  handler: async (ctx, { memberId }) => {
+    try {
+      // Get the member to find their userId
+      const member = await ctx.runQuery(components.betterAuth.lib.findOne, {
+        model: "member",
+        where: [{ field: "id", value: memberId }]
+      });
+
+      if (!member) {
+        return [];
+      }
+
+      // Find all team memberships for this user in our teamMembers table
+      const teamMemberships = await ctx.db
+        .query("teamMembers")
+        .withIndex("byUserId", (q) => q.eq("userId", member.userId))
+        .collect();
+
+      // Get team details for each membership
+      const teams = await Promise.all(
+        teamMemberships.map(async (membership) => {
+          const team = await ctx.runQuery(components.betterAuth.lib.findOne, {
+            model: "team",
+            where: [{ field: "id", value: membership.teamId }]
+          });
+
+          return team
+            ? {
+                id: team.id,
+                name: team.name,
+                organizationId: team.organizationId,
+                createdAt: team.createdAt,
+                membershipId: membership._id
+              }
+            : null;
+        })
+      );
+
+      return teams.filter((team) => team !== null);
+    } catch (error) {
+      console.error("Error getting member teams:", error);
+      return [];
     }
   }
 });
