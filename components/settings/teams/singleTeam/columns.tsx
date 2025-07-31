@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
 import { EllipsisIcon, UserMinusIcon } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import Image from "next/image";
 
 interface Member {
   id: string;
@@ -20,6 +23,39 @@ interface Member {
   organizationId: string;
 }
 
+// Component to handle async image loading
+const MemberAvatar = ({ email, name }: { email: string; name: string }) => {
+  const userImage = useQuery(api.files.image.getUserLogoByEmail, {
+    email: email
+  });
+
+  if (userImage?.url) {
+    return (
+      <img
+        src={userImage.url}
+        alt={`${name}'s avatar`}
+        width={32}
+        height={32}
+        className="w-8 h-8 rounded-full object-cover"
+      />
+    );
+  }
+
+  // Fallback to initials or placeholder
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+      {initials || "?"}
+    </div>
+  );
+};
+
 export const columns: ColumnDef<Member>[] = [
   {
     id: "member",
@@ -28,8 +64,7 @@ export const columns: ColumnDef<Member>[] = [
       const member = row.original;
       return (
         <div className="flex flex-row justify-start items-center gap-2">
-          {/* TODO: Add image */}
-          <span className="w-8 h-8 rounded-full bg-muted" />
+          <MemberAvatar email={member.email} name={member.name} />
           <div className="flex flex-col justify-start items-start">
             <div className="text-left font-medium text-sm">{member.name}</div>
             <div className="text-left font-medium text-xs text-muted-foreground">
@@ -56,6 +91,7 @@ export const columns: ColumnDef<Member>[] = [
   },
   {
     id: "actions",
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     cell: ({ row }) => {
       return (
         <DropdownMenu>

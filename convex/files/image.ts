@@ -63,18 +63,31 @@ export const getUserLogo = query({
   }
 });
 
-export const getUserLogoById = query({
+export const getUserLogoByEmail = query({
   args: {
-    userId: v.string()
+    email: v.string()
   },
   handler: async (ctx, args) => {
-    const { userId } = args;
+    const { email } = args;
+
+    const user = await ctx.runQuery(components.betterAuth.lib.findOne, {
+      model: "user",
+      where: [{ field: "email", value: email }]
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    console.log(user);
 
     const userLogo = await ctx.db
       .query("files")
       .filter((q) => q.eq(q.field("type"), "profile"))
-      .filter((q) => q.eq(q.field("userId"), userId))
+      .filter((q) => q.eq(q.field("userId"), user.userId))
       .first();
+
+    console.log(userLogo);
 
     if (userLogo?.format === "image") {
       const url = await ctx.storage.getUrl(userLogo.body);
