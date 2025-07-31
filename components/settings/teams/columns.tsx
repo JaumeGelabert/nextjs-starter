@@ -22,10 +22,10 @@ export const columns: ColumnDef<Team>[] = [
   },
   {
     accessorKey: "members",
-    header: () => <div className="text-left">Members</div>,
+    header: () => <div className="text-right">Members</div>,
     cell: ({ row }) => {
       return (
-        <div className="text-left font-medium">{row.getValue("members")}</div>
+        <div className="text-right font-medium">{row.getValue("members")}</div>
       );
     }
   },
@@ -35,7 +35,11 @@ export const columns: ColumnDef<Team>[] = [
     cell: ({ row }) => {
       return (
         <div className="text-right font-medium">
-          {new Date(row.getValue("createdAt")).toLocaleDateString()}
+          {new Date(row.getValue("createdAt")).toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric"
+          })}
         </div>
       );
     }
