@@ -21,6 +21,7 @@ export function AppSidebar() {
           isPending={activeOrg.isPending}
           email={user?.user.email ?? ""}
         />
+        {/* Team Section */}
         <SidebarGroup />
         <SidebarGroup />
       </SidebarContent>

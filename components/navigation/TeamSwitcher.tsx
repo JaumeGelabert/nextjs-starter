@@ -16,11 +16,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import CreateTeamModal from "../team/CreateTeamModal";
 import { useEffect, useState, useTransition } from "react";
+import { useActiveTeam } from "@/hooks/use-active-team";
+import { toast } from "sonner";
+import CreateOrgModal from "../organization/CreateOrgModal";
 
 export function TeamSwitcher({
   orgName,
@@ -31,10 +34,14 @@ export function TeamSwitcher({
   isPending: boolean;
   email: string;
 }) {
-  const [fetchingTeams, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [orgTeams, setOrgTeams] = useState([]);
   const router = useRouter();
   const { data: activeOrganization } = authClient.useActiveOrganization();
+  const { data: organizations } = authClient.useListOrganizations();
+  const { activeTeamId, activeTeam } = useActiveTeam();
+  const updateActiveTeam = useMutation(api.auth.updateActiveTeam);
+
   const getOrganizationLogoQuery = useQuery(
     api.files.image.getOrganizationLogo,
     activeOrganization?.name ? {} : "skip"
@@ -42,7 +49,7 @@ export function TeamSwitcher({
 
   const getTeams = () => {
     startTransition(async () => {
-      const { data, error } = await authClient.organization.listTeams(
+      await authClient.organization.listTeams(
         {},
         {
           onSuccess: ({ data }) => {
@@ -52,6 +59,16 @@ export function TeamSwitcher({
         }
       );
     });
+  };
+
+  const handleTeamClick = async (teamId: string) => {
+    try {
+      await updateActiveTeam({ teamId });
+      toast.success("Team switched successfully");
+    } catch (error) {
+      console.error("Error switching team:", error);
+      toast.error("Failed to switch team");
+    }
   };
 
   useEffect(() => {
@@ -85,7 +102,7 @@ export function TeamSwitcher({
                       <Skeleton className="w-20 h-4 bg-muted-foreground/10" />
                     ) : (
                       <p className="text-xs text-muted-foreground truncate">
-                        {email}
+                        {activeTeam ? activeTeam.name : email}
                       </p>
                     )}
                   </div>
@@ -100,17 +117,41 @@ export function TeamSwitcher({
             side="bottom"
             sideOffset={4}
           >
+            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+            {organizations?.map((organization) => (
+              <DropdownMenuItem key={organization.id}>
+                {organization.name}
+              </DropdownMenuItem>
+            ))}
+            <CreateOrgModal>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Add new organization
+              </DropdownMenuItem>
+            </CreateOrgModal>
+            <DropdownMenuSeparator />
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push("/settings/members")}>
               Manage members
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Teams</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuSeparator />
             {orgTeams.length ? (
               orgTeams.map((team: { id: string; name: string }) => (
-                <DropdownMenuItem key={team.id} onClick={handleTeamClick}>
-                  {team.name}
+                <DropdownMenuItem
+                  key={team.id}
+                  onClick={() => handleTeamClick(team.id)}
+                  className={activeTeamId === team.id ? "bg-accent" : ""}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>{team.name}</span>
+                    {activeTeamId === team.id && (
+                      <span className="text-xs text-muted-foreground">
+                        Active
+                      </span>
+                    )}
+                  </div>
                 </DropdownMenuItem>
               ))
             ) : (

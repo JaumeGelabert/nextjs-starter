@@ -61,6 +61,21 @@ export const getCurrentUser = query({
     // Get user data from your application's database for custom fields
     const customUserData = await ctx.db.get(userMetadata.userId as Id<"users">);
 
+    // Get active team details if activeTeamId exists
+    let activeTeam = null;
+    if (customUserData?.activeTeamId) {
+      const team = await ctx.runQuery(components.betterAuth.lib.findOne, {
+        model: "team",
+        where: [{ field: "id", value: customUserData.activeTeamId }]
+      });
+      if (team) {
+        activeTeam = {
+          id: team.id,
+          name: team.name
+        };
+      }
+    }
+
     // Better Auth user data takes precedence since we update it directly
     return {
       id: userMetadata.id,
@@ -69,6 +84,8 @@ export const getCurrentUser = query({
       image: userMetadata.image, // Use Better Auth image (updated by our mutation)
       phone: userMetadata.phoneNumber, // Use Better Auth phoneNumber
       isOnboardingComplete: customUserData?.isOnboardingComplete || false,
+      activeTeamId: customUserData?.activeTeamId || null, // Include active team ID
+      activeTeam: activeTeam, // Include active team details
       // Include any other Better Auth fields
       ...userMetadata,
       // Include any other custom fields that aren't in Better Auth
@@ -122,5 +139,33 @@ export const updateUserOnboarding = mutation({
       userId: session.userId,
       updatedFields: { name, phone, imageUrl }
     };
+  }
+});
+
+// Mutation to update the active team for the user
+export const updateActiveTeam = mutation({
+  args: {
+    teamId: v.string()
+  },
+  handler: async (ctx, { teamId }) => {
+    // Get the current user
+    const userMetadata = await betterAuthComponent.getAuthUser(ctx);
+    if (!userMetadata) {
+      throw new Error("No active session found");
+    }
+
+    const userId = userMetadata.userId as Id<"users">;
+    const user = await ctx.db.get(userId);
+
+    if (!user) {
+      console.log("USER NOT FOUND", userId);
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(userId, {
+      activeTeamId: teamId
+    });
+
+    return { success: true, activeTeamId: teamId };
   }
 });

@@ -5,7 +5,7 @@ import { type GenericCtx } from "../convex/_generated/server";
 import { betterAuthComponent } from "../convex/auth";
 import { nextCookies } from "better-auth/next-js";
 import resend from "./resend";
-import { organization } from "better-auth/plugins";
+import { organization, customSession } from "better-auth/plugins";
 import { components } from "../convex/_generated/api";
 import { ac, member, admin, owner } from "./permissions";
 import { passkey } from "better-auth/plugins/passkey";
@@ -31,7 +31,8 @@ export const createAuth = (ctx: GenericCtx) =>
             return {
               data: {
                 ...session,
-                activeOrganizationId: member?.organizationId
+                activeOrganizationId: member?.organizationId,
+                activeTeamId: null // Initialize with no active team
               }
             };
           }
@@ -84,6 +85,15 @@ export const createAuth = (ctx: GenericCtx) =>
           });
         }
       }),
-      passkey()
+      passkey(),
+      customSession(async ({ user, session }) => {
+        return {
+          user,
+          session: {
+            ...session,
+            activeTeamId: (session as any).activeTeamId || null
+          }
+        };
+      })
     ]
   });

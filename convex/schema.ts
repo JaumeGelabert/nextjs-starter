@@ -8,7 +8,8 @@ export default defineSchema({
     phone: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     // Add other custom user fields as needed
-    isOnboardingComplete: v.optional(v.boolean())
+    isOnboardingComplete: v.optional(v.boolean()),
+    activeTeamId: v.optional(v.string())
   }),
 
   // Passkey table for better-auth passkey plugin

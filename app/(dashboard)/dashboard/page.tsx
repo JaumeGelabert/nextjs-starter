@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
@@ -15,8 +16,10 @@ export default function DashboardPage() {
       }
     });
   };
-  const { data: organizations } = authClient.useListOrganizations();
   const { data: activeOrganization } = authClient.useActiveOrganization();
+  const { activeTeamId, activeTeam, isLoading } = useActiveTeam();
+  console.log("ACTIVE TEAM ID", activeTeamId);
+  console.log("ACTIVE TEAM", activeTeam);
 
   const handleSetActiveOrganization = async (organizationId: string) => {
     await authClient.organization.setActive({
@@ -26,28 +29,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
-      <div className="flex flex-col gap-4">
-        {organizations?.map((organization) => (
-          <div
-            key={organization.id}
-            onClick={() => handleSetActiveOrganization(organization.id)}
-          >
-            {organization.name}
-          </div>
-        ))}
-      </div>
-
-      <p>ACTIVE ORGANIZATION: {activeOrganization?.name}</p>
-      <p>ACTIVE TEAM: XXX</p>
       <Button onClick={handleLogout}>Log out</Button>
-      <div className="mt-10">
-        {activeOrganization?.members.map((member) => (
-          <div key={member.id}>
-            {member.user.email} - {member.role}
-            <Button className="ml-10">Remove</Button>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
