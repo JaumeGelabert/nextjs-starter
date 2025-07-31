@@ -70,7 +70,10 @@ export default function MembersPage() {
                   >
                     Remove
                   </Button>
-                  <MemberActions />
+                  <MemberActions
+                    memberId={member.id}
+                    memberName={member.user.name || member.user.email}
+                  />
                 </>
               )}
             </div>

@@ -265,14 +265,6 @@ export const getTeamsWithMembers = query({
         return [];
       }
 
-      const organization = await ctx.runQuery(
-        components.betterAuth.lib.findOne,
-        {
-          model: "organization",
-          where: [{ field: "id", value: targetOrgId }]
-        }
-      );
-
       const teamsResult = await ctx.runQuery(
         components.betterAuth.lib.findMany,
         {
@@ -286,22 +278,28 @@ export const getTeamsWithMembers = query({
       );
 
       const teams = teamsResult?.page || [];
+      console.log("Raw teams data:", teams);
 
       // Get member count for each team and return full team data
       const teamsWithMembers = await Promise.all(
         teams.map(
           async (team: {
-            id: string;
+            _id: string;
             name: string;
             organizationId: string;
             createdAt: number;
           }) => {
             try {
+              console.log("Processing team:", {
+                id: team._id,
+                name: team.name
+              });
+
               const membersResult = await ctx.runQuery(
                 components.betterAuth.lib.findMany,
                 {
                   model: "member",
-                  where: [{ field: "teamId", value: team.id }],
+                  where: [{ field: "teamId", value: team._id }],
                   paginationOpts: {
                     cursor: null,
                     numItems: 1000 // Large number to get all members effectively
@@ -314,26 +312,31 @@ export const getTeamsWithMembers = query({
               const memberCount = Array.isArray(members) ? members.length : 0;
 
               // Ensure all fields are properly typed and not undefined
-              return {
-                id: team.id || "",
+              const teamWithMembers = {
+                id: team._id, // Remove || "" to ensure we get the actual ID
                 name: team.name || "",
                 organizationId: team.organizationId || "",
                 createdAt: team.createdAt || 0,
                 members: memberCount
               };
+
+              console.log("Team with members:", teamWithMembers);
+              return teamWithMembers;
             } catch (memberError) {
               console.error(
-                `Error getting members for team ${team.id}:`,
+                `Error getting members for team ${team._id}:`,
                 memberError
               );
               // Return team data with 0 members if member query fails
-              return {
-                id: team.id || "",
+              const fallbackTeam = {
+                id: team._id, // Remove || "" to ensure we get the actual ID
                 name: team.name || "",
                 organizationId: team.organizationId || "",
                 createdAt: team.createdAt || 0,
                 members: 0
               };
+              console.log("Fallback team:", fallbackTeam);
+              return fallbackTeam;
             }
           }
         )
@@ -385,6 +388,94 @@ export const getTeamsSimple = query({
     } catch (error) {
       console.error("Error in getTeamsSimple:", error);
       return [];
+    }
+  }
+});
+
+// Mutation to add a member to a team
+export const addMemberToTeam = mutation({
+  args: {
+    memberId: v.string(),
+    teamId: v.string()
+  },
+  handler: async (ctx, { memberId, teamId }) => {
+    try {
+      console.log("=== ADD MEMBER TO TEAM DEBUG ===");
+      console.log("Input params:", { memberId, teamId });
+
+      const session = await ctx.runQuery(
+        components.betterAuth.lib.getCurrentSession
+      );
+      console.log("Session data:", {
+        hasSession: !!session,
+        hasToken: !!session?.token,
+        activeOrganizationId: session?.activeOrganizationId
+      });
+
+      if (!session || !session.token) {
+        throw new Error("Not authenticated");
+      }
+
+      // Verify the team exists and belongs to the current organization
+      console.log("Looking up team with ID:", teamId);
+      const team = await ctx.runQuery(components.betterAuth.lib.findOne, {
+        model: "team",
+        where: [{ field: "id", value: teamId }]
+      });
+      console.log("Team found:", team);
+
+      if (!team) {
+        throw new Error("Team not found");
+      }
+
+      // Verify the member exists and belongs to the same organization
+      console.log("Looking up member with ID:", memberId);
+      const member = await ctx.runQuery(components.betterAuth.lib.findOne, {
+        model: "member",
+        where: [{ field: "id", value: memberId }]
+      });
+      console.log("Member found:", member);
+
+      if (!member) {
+        throw new Error("Member not found");
+      }
+
+      console.log("Organization comparison:");
+      console.log("- Member organization ID:", member.organizationId);
+      console.log("- Team organization ID:", team.organizationId);
+      console.log(
+        "- Session active organization ID:",
+        session.activeOrganizationId
+      );
+      console.log(
+        "- Organizations match:",
+        member.organizationId === team.organizationId
+      );
+
+      if (member.organizationId !== team.organizationId) {
+        console.error("ORGANIZATION MISMATCH!");
+        console.error("Member belongs to:", member.organizationId);
+        console.error("Team belongs to:", team.organizationId);
+        throw new Error("Member and team must belong to the same organization");
+      }
+
+      // Update the member to add them to the team
+      console.log("Updating member to add to team...");
+      await ctx.runMutation(components.betterAuth.lib.updateOne, {
+        input: {
+          model: "member",
+          where: [{ field: "id", value: memberId }],
+          update: {
+            teamId: teamId
+          }
+        }
+      });
+
+      console.log("Successfully added member to team!");
+      return { success: true, memberId, teamId };
+    } catch (error) {
+      console.error("Error adding member to team:", error);
+      throw error;
     }
   }
 });
