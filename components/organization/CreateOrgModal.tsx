@@ -20,7 +20,9 @@ export default function CreateOrgModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger className="mt-1 px-1.5" asChild>
+        {children}
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create a new organization</DialogTitle>

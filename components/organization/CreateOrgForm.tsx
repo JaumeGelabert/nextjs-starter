@@ -51,7 +51,6 @@ export default function CreateOrgForm({
             toast.error("Error creating organization");
           },
           onSuccess: () => {
-            // TODO: Set active organization
             toast.success("Organization created successfully");
             onSuccess();
           }

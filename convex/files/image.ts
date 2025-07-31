@@ -88,6 +88,28 @@ export const getOrganizationLogo = query({
   }
 });
 
+export const getOrganizationLogoById = query({
+  args: {
+    organizationId: v.string()
+  },
+  handler: async (ctx, args) => {
+    const { organizationId } = args;
+
+    const organizationLogo = await ctx.db
+      .query("files")
+      .filter((q) => q.eq(q.field("type"), "organization"))
+      .filter((q) => q.eq(q.field("userId"), organizationId))
+      .first();
+
+    if (organizationLogo?.format === "image") {
+      const url = await ctx.storage.getUrl(organizationLogo.body);
+      return { url, storageId: organizationLogo._id };
+    }
+
+    return null;
+  }
+});
+
 export const deleteById = mutation({
   args: {
     fileId: v.id("files")

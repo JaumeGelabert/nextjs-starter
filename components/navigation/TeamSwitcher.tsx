@@ -14,16 +14,18 @@ import {
   SidebarMenuItem
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import CreateTeamModal from "../team/CreateTeamModal";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useCallback } from "react";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { toast } from "sonner";
 import CreateOrgModal from "../organization/CreateOrgModal";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import OrganizationItem from "./OrganizationItem";
 
 export function TeamSwitcher({
   orgName,
@@ -39,27 +41,36 @@ export function TeamSwitcher({
   const router = useRouter();
   const { data: activeOrganization } = authClient.useActiveOrganization();
   const { data: organizations } = authClient.useListOrganizations();
+
+  // Debug: Log the structure of activeOrganization
+  console.log("Active Organization:", activeOrganization);
   const { activeTeamId, activeTeam } = useActiveTeam();
   const updateActiveTeam = useMutation(api.auth.updateActiveTeam);
+  const setActiveOrganization = useMutation(api.auth.setActiveOrganization);
 
-  const getOrganizationLogoQuery = useQuery(
+  const getActiveOrgLogoQuery = useQuery(
     api.files.image.getOrganizationLogo,
-    activeOrganization?.name ? {} : "skip"
+    {}
   );
 
-  const getTeams = () => {
+  const getTeams = useCallback(() => {
     startTransition(async () => {
       await authClient.organization.listTeams(
         {},
         {
           onSuccess: ({ data }) => {
             console.log("data", data);
-            setOrgTeams(data);
+            // Filter out teams that have the same name as the organization (default teams)
+            const filteredTeams = data.filter(
+              (team: { id: string; name: string }) =>
+                team.name !== activeOrganization?.name
+            );
+            setOrgTeams(filteredTeams);
           }
         }
       );
     });
-  };
+  }, [startTransition, activeOrganization?.name]);
 
   const handleTeamClick = async (teamId: string) => {
     try {
@@ -71,9 +82,24 @@ export function TeamSwitcher({
     }
   };
 
+  const handleOrganizationSwitch = async (organizationId: string) => {
+    try {
+      // Use our custom mutation that clears team and sets organization
+      await setActiveOrganization({ organizationId });
+
+      // Refresh teams for the new organization
+      getTeams();
+
+      toast.success("Organization switched successfully");
+    } catch (error) {
+      console.error("Error switching organization:", error);
+      toast.error("Failed to switch organization");
+    }
+  };
+
   useEffect(() => {
     getTeams();
-  }, []);
+  }, [getTeams]);
 
   return (
     <SidebarMenu>
@@ -83,15 +109,16 @@ export function TeamSwitcher({
             <SidebarMenuButton className="w-full px-1.5 py-0.5 h-fit">
               <div className="flex flex-row justify-between items-center w-full">
                 <div className="flex flex-row items-center gap-2">
-                  <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-md">
-                    {getOrganizationLogoQuery?.url && (
-                      <img
-                        src={getOrganizationLogoQuery.url}
-                        alt="Organization logo"
-                        className="size-8"
-                      />
-                    )}
-                  </div>
+                  <Avatar className="rounded-md">
+                    <AvatarImage
+                      src={getActiveOrgLogoQuery?.url ?? ""}
+                      alt="Organization logo"
+                    />
+                    <AvatarFallback className="text-xs rounded bg-primary text-secondary">
+                      {orgName.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+
                   <div>
                     {isPending ? (
                       <Skeleton className="w-10 h-[17px] bg-muted-foreground/10 mb-[1px]" />
@@ -117,17 +144,22 @@ export function TeamSwitcher({
             side="bottom"
             sideOffset={4}
           >
-            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+            <div className="flex flex-row items-center justify-between">
+              <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+              <CreateOrgModal>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <PlusIcon className="size-3 text-primary" />
+                </DropdownMenuItem>
+              </CreateOrgModal>
+            </div>
             {organizations?.map((organization) => (
-              <DropdownMenuItem key={organization.id}>
-                {organization.name}
-              </DropdownMenuItem>
+              <OrganizationItem
+                key={organization.id}
+                organization={organization}
+                isActive={activeOrganization?.id === organization.id}
+                onSelect={handleOrganizationSwitch}
+              />
             ))}
-            <CreateOrgModal>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                Add new organization
-              </DropdownMenuItem>
-            </CreateOrgModal>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Profile</DropdownMenuItem>
@@ -135,8 +167,7 @@ export function TeamSwitcher({
               Manage members
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuSeparator />
-            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Teams</DropdownMenuLabel>
             {orgTeams.length ? (
               orgTeams.map((team: { id: string; name: string }) => (
                 <DropdownMenuItem

@@ -169,3 +169,76 @@ export const updateActiveTeam = mutation({
     return { success: true, activeTeamId: teamId };
   }
 });
+
+// Mutation to clear the active team (set to null)
+export const clearActiveTeam = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Get the current user
+    const userMetadata = await betterAuthComponent.getAuthUser(ctx);
+    if (!userMetadata) {
+      throw new Error("No active session found");
+    }
+
+    const userId = userMetadata.userId as Id<"users">;
+    const user = await ctx.db.get(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(userId, {
+      activeTeamId: undefined
+    });
+
+    return { success: true };
+  }
+});
+
+// Mutation to set the active organization and clear active team
+export const setActiveOrganization = mutation({
+  args: {
+    organizationId: v.string()
+  },
+  handler: async (ctx, { organizationId }) => {
+    // Get the current session
+    const session = await ctx.runQuery(
+      components.betterAuth.lib.getCurrentSession
+    );
+
+    if (!session.token) {
+      throw new Error("No active session found");
+    }
+
+    // Get the current user
+    const userMetadata = await betterAuthComponent.getAuthUser(ctx);
+    if (!userMetadata) {
+      throw new Error("No active session found");
+    }
+
+    // First clear the active team since we're switching organizations
+    const userId = userMetadata.userId as Id<"users">;
+    const user = await ctx.db.get(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(userId, {
+      activeTeamId: undefined
+    });
+
+    // Update the session with the new active organization
+    await ctx.runMutation(components.betterAuth.lib.updateOne, {
+      input: {
+        model: "session",
+        where: [{ field: "token", value: session.token }],
+        update: {
+          activeOrganizationId: organizationId
+        }
+      }
+    });
+
+    return { success: true, organizationId, teamCleared: true };
+  }
+});
