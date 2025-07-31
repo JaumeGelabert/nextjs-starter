@@ -27,6 +27,7 @@ export const {
   isAuthenticated
 } = betterAuthComponent.createAuthFunctions<DataModel>({
   // Must create a user and return the user id
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onCreateUser: async (ctx, _user) => {
     return ctx.db.insert("users", {});
   },
@@ -240,5 +241,150 @@ export const setActiveOrganization = mutation({
     });
 
     return { success: true, organizationId, teamCleared: true };
+  }
+});
+
+// Query to get teams with member counts for the current organization
+export const getTeamsWithMembers = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      const session = await ctx.runQuery(
+        components.betterAuth.lib.getCurrentSession
+      );
+
+      if (!session || !session.token) {
+        return []; // Return empty array if no session instead of throwing error
+      }
+
+      // Use provided organizationId or get from session
+      const targetOrgId = session.activeOrganizationId;
+      console.log("TARGET ORG ID", targetOrgId);
+
+      if (!targetOrgId) {
+        return [];
+      }
+
+      const organization = await ctx.runQuery(
+        components.betterAuth.lib.findOne,
+        {
+          model: "organization",
+          where: [{ field: "id", value: targetOrgId }]
+        }
+      );
+
+      const teamsResult = await ctx.runQuery(
+        components.betterAuth.lib.findMany,
+        {
+          model: "team",
+          where: [{ field: "organizationId", value: targetOrgId }],
+          paginationOpts: {
+            cursor: null,
+            numItems: 20
+          }
+        }
+      );
+
+      const teams = teamsResult?.page || [];
+
+      // Get member count for each team and return full team data
+      const teamsWithMembers = await Promise.all(
+        teams.map(
+          async (team: {
+            id: string;
+            name: string;
+            organizationId: string;
+            createdAt: number;
+          }) => {
+            try {
+              const membersResult = await ctx.runQuery(
+                components.betterAuth.lib.findMany,
+                {
+                  model: "member",
+                  where: [{ field: "teamId", value: team.id }],
+                  paginationOpts: {
+                    cursor: null,
+                    numItems: 1000 // Large number to get all members effectively
+                  }
+                }
+              );
+
+              // Extract members from the paginated result
+              const members = membersResult?.page || [];
+              const memberCount = Array.isArray(members) ? members.length : 0;
+
+              // Ensure all fields are properly typed and not undefined
+              return {
+                id: team.id || "",
+                name: team.name || "",
+                organizationId: team.organizationId || "",
+                createdAt: team.createdAt || 0,
+                members: memberCount
+              };
+            } catch (memberError) {
+              console.error(
+                `Error getting members for team ${team.id}:`,
+                memberError
+              );
+              // Return team data with 0 members if member query fails
+              return {
+                id: team.id || "",
+                name: team.name || "",
+                organizationId: team.organizationId || "",
+                createdAt: team.createdAt || 0,
+                members: 0
+              };
+            }
+          }
+        )
+      );
+
+      return teamsWithMembers;
+    } catch (error) {
+      console.error("Error in getTeamsWithMembers:", error);
+      return []; // Return empty array on any error to prevent UI crashes
+    }
+  }
+});
+
+// Simpler debug query to test if the issue is with the main query
+export const getTeamsSimple = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      const session = await ctx.runQuery(
+        components.betterAuth.lib.getCurrentSession
+      );
+
+      if (!session || !session.token) {
+        return [];
+      }
+
+      const targetOrgId = session.activeOrganizationId;
+
+      if (!targetOrgId) {
+        return [];
+      }
+
+      return [
+        {
+          id: "test-1",
+          name: "Test Team 1",
+          organizationId: targetOrgId,
+          createdAt: Date.now(),
+          members: 2
+        },
+        {
+          id: "test-2",
+          name: "Test Team 2",
+          organizationId: targetOrgId,
+          createdAt: Date.now(),
+          members: 5
+        }
+      ];
+    } catch (error) {
+      console.error("Error in getTeamsSimple:", error);
+      return [];
+    }
   }
 });

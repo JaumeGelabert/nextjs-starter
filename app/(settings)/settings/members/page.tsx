@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import InviteActions from "@/components/settings/InviteActions";
 import SendInvitationModal from "@/components/settings/SendInvitationModal";
+import MemberActions from "@/components/settings/members/MemberActions";
 
 export default function MembersPage() {
   const { data: activeOrganization } = authClient.useActiveOrganization();
@@ -58,15 +59,19 @@ export default function MembersPage() {
                 {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
               </p>
               {showRemoveButton() && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={
-                    member.role === "owner" || isCurrentUser(member.user.email)
-                  }
-                >
-                  Remove
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      member.role === "owner" ||
+                      isCurrentUser(member.user.email)
+                    }
+                  >
+                    Remove
+                  </Button>
+                  <MemberActions />
+                </>
               )}
             </div>
           </div>
