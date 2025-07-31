@@ -48,7 +48,6 @@ export const getUserLogo = query({
     if (!identity) {
       throw new Error("Unauthorized");
     }
-    console.log("identity", identity);
 
     const userLogo = await ctx.db
       .query("files")

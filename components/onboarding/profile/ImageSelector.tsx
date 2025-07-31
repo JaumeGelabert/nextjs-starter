@@ -35,6 +35,7 @@ export default function ImageSelector({
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const deleteImageMutation = useMutation(api.files.image.deleteById);
+  
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {

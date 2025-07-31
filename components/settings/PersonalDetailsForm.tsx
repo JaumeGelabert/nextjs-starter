@@ -35,10 +35,12 @@ export default function PersonalDetailsForm({
 }: PersonalDetailsFormProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, startTransition] = useTransition();
+
   const getUserLogoQuery = useQuery(
     api.files.image.getUserLogo,
     email ? {} : "skip"
   );
+
   const updateUser = useMutation(api.user.updateUserOnboarding);
   const generateUploadUrlMutation = useMutation(
     api.files.image.generateUploadUrl
@@ -68,6 +70,7 @@ export default function PersonalDetailsForm({
         });
         if (selectedFile) {
           // Delete the old image
+
           if (getUserLogoQuery?.storageId) {
             await deleteImageMutation({
               fileId: getUserLogoQuery.storageId
