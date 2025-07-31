@@ -15,6 +15,7 @@ import { CreateTeamSchema } from "@/schemas/CreateTeamSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import z from "zod";
 
 export default function CreateTeamForm({
@@ -44,8 +45,11 @@ export default function CreateTeamForm({
         console.log("error", error);
 
         if (data && !error) {
+          toast.success("Team created successfully");
           form.reset();
           onSuccess?.();
+        } else if (error) {
+          toast.error("Error creating team");
         }
       } catch (error) {
         console.error("Error updating user:", error);

@@ -14,7 +14,13 @@ import {
   SidebarMenuItem
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, PlusIcon } from "lucide-react";
+import {
+  ChevronDown,
+  CogIcon,
+  PlusIcon,
+  UserIcon,
+  UsersIcon
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -26,6 +32,7 @@ import { toast } from "sonner";
 import CreateOrgModal from "../organization/CreateOrgModal";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import OrganizationItem from "./OrganizationItem";
+import { config } from "@/config";
 
 export function TeamSwitcher({
   orgName,
@@ -147,7 +154,12 @@ export function TeamSwitcher({
             <div className="flex flex-row items-center justify-between">
               <DropdownMenuLabel>Organizations</DropdownMenuLabel>
               <CreateOrgModal>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  disabled={
+                    (organizations?.length ?? 0) >= config.limits.organizations
+                  }
+                >
                   <PlusIcon className="size-3 text-primary" />
                 </DropdownMenuItem>
               </CreateOrgModal>
@@ -161,13 +173,17 @@ export function TeamSwitcher({
               />
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/settings/members")}>
-              Manage members
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Teams</DropdownMenuLabel>
+            <div className="flex flex-row items-center justify-between">
+              <DropdownMenuLabel>Teams</DropdownMenuLabel>
+              <CreateTeamModal onTeamCreated={getTeams}>
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  disabled={(orgTeams.length ?? 0) >= config.limits.teams}
+                >
+                  <PlusIcon className="size-3 text-primary" />
+                </DropdownMenuItem>
+              </CreateTeamModal>
+            </div>
             {orgTeams.length ? (
               orgTeams.map((team: { id: string; name: string }) => (
                 <DropdownMenuItem
@@ -175,13 +191,21 @@ export function TeamSwitcher({
                   onClick={() => handleTeamClick(team.id)}
                   className={activeTeamId === team.id ? "bg-accent" : ""}
                 >
-                  <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center justify-start gap-2 w-full">
+                    <Avatar className="size-6 rounded">
+                      <AvatarImage src={""} alt="Team logo" />
+                      <AvatarFallback className="text-xs rounded bg-primary text-secondary">
+                        {team.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
                     <span>{team.name}</span>
-                    {activeTeamId === team.id && (
-                      <span className="text-xs text-muted-foreground">
-                        Active
-                      </span>
-                    )}
+                    <div className="flex items-center justify-end">
+                      {activeTeamId === team.id && (
+                        <span className="text-xs text-muted-foreground">
+                          Active
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </DropdownMenuItem>
               ))
@@ -190,11 +214,20 @@ export function TeamSwitcher({
                 {orgName} has no teams yet.
               </div>
             )}
-            <CreateTeamModal>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                Add team
-              </DropdownMenuItem>
-            </CreateTeamModal>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <CogIcon />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <UserIcon />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings/members")}>
+              <UsersIcon />
+              Manage members
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
