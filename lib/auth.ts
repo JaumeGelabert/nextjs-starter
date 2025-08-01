@@ -91,6 +91,7 @@ export const createAuth = (ctx: GenericCtx) =>
           user,
           session: {
             ...session,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             activeTeamId: (session as any).activeTeamId || null
           }
         };
