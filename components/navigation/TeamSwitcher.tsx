@@ -110,7 +110,7 @@ export function TeamSwitcher({
   }, [getTeams]);
 
   return (
-    <SidebarMenu>
+    <SidebarMenu className="p-2">
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

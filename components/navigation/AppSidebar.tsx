@@ -5,13 +5,14 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
-  SidebarGroupLabel
+  SidebarGroupLabel,
+  SidebarMenuButton,
+  SidebarMenuItem
 } from "@/components/ui/sidebar";
-import { TeamSwitcher } from "./TeamSwitcher";
 import { authClient } from "@/lib/auth-client";
-import { PlusIcon } from "lucide-react";
+import { FolderIcon, PillIcon } from "lucide-react";
+import { TeamSwitcher } from "./TeamSwitcher";
 
 export function AppSidebar() {
   const activeOrg = authClient.useActiveOrganization();
@@ -19,7 +20,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent className="p-2">
+      <SidebarContent className="">
         <TeamSwitcher
           orgName={activeOrg.data?.name ?? ""}
           isPending={activeOrg.isPending}
@@ -28,7 +29,24 @@ export function AppSidebar() {
         {/* Team Section */}
         <SidebarGroup>
           <SidebarGroupLabel>Management</SidebarGroupLabel>
-          <SidebarGroupContent />
+          <SidebarGroupContent>
+            <SidebarMenuItem className="list-none">
+              <SidebarMenuButton asChild>
+                <a href="#">
+                  <PillIcon />
+                  <span>Medication</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem className="list-none">
+              <SidebarMenuButton asChild>
+                <a href="#">
+                  <FolderIcon />
+                  <span>Files</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup />
       </SidebarContent>
