@@ -7,11 +7,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { ColumnDef } from "@tanstack/react-table";
-import { EllipsisIcon, UserMinusIcon } from "lucide-react";
-import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import Image from "next/image";
+import { ColumnDef } from "@tanstack/react-table";
+import { useQuery } from "convex/react";
+import { EllipsisIcon, UserMinusIcon } from "lucide-react";
 
 interface Member {
   id: string;
@@ -23,7 +22,6 @@ interface Member {
   organizationId: string;
 }
 
-// Component to handle async image loading
 const MemberAvatar = ({ email, name }: { email: string; name: string }) => {
   const userImage = useQuery(api.files.image.getUserLogoByEmail, {
     email: email
@@ -94,19 +92,21 @@ export const columns: ColumnDef<Member>[] = [
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     cell: ({ row }) => {
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <EllipsisIcon className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem>
-              <UserMinusIcon />
-              Remove from team
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex flex-row justify-end items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <EllipsisIcon className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem>
+                <UserMinusIcon />
+                Remove from team
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     }
   }
