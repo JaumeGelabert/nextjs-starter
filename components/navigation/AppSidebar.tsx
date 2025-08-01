@@ -4,10 +4,14 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel
 } from "@/components/ui/sidebar";
 import { TeamSwitcher } from "./TeamSwitcher";
 import { authClient } from "@/lib/auth-client";
+import { PlusIcon } from "lucide-react";
 
 export function AppSidebar() {
   const activeOrg = authClient.useActiveOrganization();
@@ -22,7 +26,10 @@ export function AppSidebar() {
           email={user?.user.email ?? ""}
         />
         {/* Team Section */}
-        <SidebarGroup />
+        <SidebarGroup>
+          <SidebarGroupLabel>Management</SidebarGroupLabel>
+          <SidebarGroupContent />
+        </SidebarGroup>
         <SidebarGroup />
       </SidebarContent>
       <SidebarFooter />

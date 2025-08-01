@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  BuildingIcon,
   ChevronDown,
   CogIcon,
   PlusIcon,
@@ -216,17 +217,15 @@ export function TeamSwitcher({
             )}
 
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <CogIcon />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings/profile")}>
               <UserIcon />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/settings/members")}>
-              <UsersIcon />
-              Manage members
+            <DropdownMenuItem
+              onClick={() => router.push("/settings/organization")}
+            >
+              <BuildingIcon />
+              Manage organization
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
